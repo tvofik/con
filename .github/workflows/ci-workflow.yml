@@ -13,5 +13,5 @@ jobs:
       - name: Guy how far
         run: |
         uname -a
-        echo ${{ env.SERVER }}
+        echo '${{ env.SERVER }}'
       # uses: actions/checkout@v2
