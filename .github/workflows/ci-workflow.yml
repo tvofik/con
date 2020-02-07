@@ -14,4 +14,4 @@ jobs:
         run: |
           ls -l
           uname -a
-          echo '$SERVER'
+          echo $SERVER
