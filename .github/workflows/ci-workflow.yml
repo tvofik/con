@@ -11,5 +11,7 @@ jobs:
 
     steps:
       - name: Guy how far
-        run: uname -a
-        # uses: actions/checkout@v2
+        run: |
+        uname -a
+        echo ${{ env.SERVER }}
+      # uses: actions/checkout@v2
