@@ -2,6 +2,7 @@ name: Hello
 on: [push]
 env:
   SERVER: Production
+  REGION: us-east-1
 
 jobs:
   my_first_job:
@@ -10,10 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Build
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: $REGION
+      - name: Download files
         uses: actions/checkout@v2
-      - name: Guy how far
+      - name: Launch CFN
         run: |
           ls -l
           uname -a
           echo $SERVER
+          cat AWSConfig-01.yml
