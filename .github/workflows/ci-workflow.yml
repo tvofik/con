@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: Guy how far
         run: |
+        ls -l
         uname -a
-        echo $SERVER
-      # uses: actions/checkout@v2
+        echo '$SERVER'
