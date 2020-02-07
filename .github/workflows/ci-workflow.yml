@@ -22,6 +22,6 @@ jobs:
         run: |
           ls -l
           aws --version
-          aws cloudformation deploy --template-file ./AWSConfig-01.yml --stack-name github-actions --capabilities CAPABILITY_IAM
+          aws cloudformation deploy --template-file ./AWSConfig-01.yml --stack-name github-actions --capabilities CAPABILITY_NAMED_IAM
         # uname -a
         # echo $SERVER
