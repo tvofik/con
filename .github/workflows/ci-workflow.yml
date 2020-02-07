@@ -22,7 +22,7 @@ jobs:
       - name: Launch CFN
         run: |
           ls -l
-          uname -a
-          echo $SERVER
           aws --version
+        # uname -a
+        # echo $SERVER
         # aws cloudformation deploy --template-file AWSConfig-01.yml --stack-name github-actions
