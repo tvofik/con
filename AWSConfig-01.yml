@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for a Lambda Function, its role, an automation document & creating parameters of SSM document ARN in parameter store for AWS Config Remediation
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      Policies:
+        - PolicyName: CreateAssociationGetParameter
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ssm:CreateAssociation
+                  - ssm:GetParameter
+                Resource: "*"
+      RoleName: RemediationFunctionRole
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+
+          ssm_client = boto3.client('ssm')
+          ec2_resource = boto3.resource('ec2')
+
+          def get_docs(os,docs):
+            windows = '/docs-ssm/windows/'
+            linux = '/docs-ssm/linux/'
+
+            if os == 'windows':
+              ssm_document = f"{windows}{docs}"
+              print(ssm_document)
+            else:
+              ssm_document = f"{linux}{docs}"
+              print(ssm_document)
+            # Function to get the ssm documents
+            return ssm_client.get_parameter(Name=ssm_document)
+
+          def handler(event, context):
+            # Gets the passed in parameters from the AWS Config
+            missing_application = event['MissingApplication']
+            instance_id = event['InstanceId']
+            
+            # Get the OS of the instance
+            instance = ec2_resource.Instance(instance_id)
+            operating_system = instance.platform
+            
+            # Get the document from SSM
+            response = get_docs(operating_system, missing_application)
+
+            document_arn = response['Parameter']['Value']
+            print(document_arn)
+
+            # Makes the association to install the  with the instance
+            ssm_client.create_association(
+              Name=document_arn,
+              Targets=[
+                {
+                  'Key': 'InstanceIds',
+                  'Values': [instance_id]
+                }
+              ],
+              AssociationName=f'{missing_application}-Association'
+            )
+      FunctionName: RemediationFunction
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.7
+  AutomationDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Content:
+        description: Invoke a Lambda Function
+        schemaVersion: "0.3"
+        assumeRole: "{{ AutomationAssumeRole }}"
+        parameters:
+          InstanceId:
+            type: String
+            description: (Required) The Id of the instance
+          MissingApplication:
+            type: String
+            description: (Required) The name of the S3 Bucket whose encryption configuration will be managed.
+          AutomationAssumeRole:
+            type: String
+            description: (Optional) The ARN of the role that allows Automation to perform the actions on your behalf.
+            default: ""
+        mainSteps:
+          - name: invokeMyLambdaFunction
+            action: aws:invokeLambdaFunction
+            maxAttempts: 3
+            timeoutSeconds: 120
+            onFailure: Abort
+            inputs:
+              FunctionName: !Ref LambdaFunction
+              Payload: '{"InstanceId":"{{ InstanceId }}", "MissingApplication":"{{ MissingApplication }}"}'
+            isEnd: true
+      DocumentType: Automation
+      Name: ConfigApplicationRemediation
+  LinuxSplunk:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/linux/splunk
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for linux instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/Splunk_linux"
+  LinuxNagios:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/linux/nagios
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for linux instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/NagiosTest1"
+  LinuxCylance:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/linux/cylance
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for linux instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/CycloneLinux"
+  WindowsCylance:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/windows/cylance
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for windows instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/cylance-windows"
+  WindowsCB:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/windows/carbonblack
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for windows instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/Carbonblackwindows"
+  WindowsSplunk:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /docs-ssm/windows/splunk
+      Type: String
+      Description: ARNs of shared SSM documents to be called by a lambda function for Association for windows instances
+      Value: "arn:aws:ssm:us-east-1:535407588590:document/Splunkwindows"
