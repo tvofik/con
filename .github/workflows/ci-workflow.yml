@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - name: Guy how far
+        env:
+          SERVER: Dev
         run: |
         ls -l
         uname -a
