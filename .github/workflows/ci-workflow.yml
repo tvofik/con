@@ -24,4 +24,4 @@ jobs:
           ls -l
           uname -a
           echo $SERVER
-          cat AWSConfig-01.yml
+          aws cloudformation deploy --template-file AWSConfig-01.yml --stack-name github-actions
