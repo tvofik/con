@@ -11,5 +11,5 @@ jobs:
 
     steps:
       - name: Guy how far
-        uses: actions/checkout@v2
-        run: ls -al
+        run: uname -a
+        # uses: actions/checkout@v2
