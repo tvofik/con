@@ -1,5 +1,13 @@
 name: Hello
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+    branches:
+      - master
+    
 env:
   SERVER: Production
 
